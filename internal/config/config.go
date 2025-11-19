@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -16,6 +17,15 @@ type Config struct {
 
 	Database struct {
 		DSN string
+	}
+
+	JWT struct {
+		JWTSecret string
+	}
+
+	Auth struct {
+		AccessTTL  time.Duration
+		RefreshTTL time.Duration
 	}
 }
 
@@ -49,6 +59,11 @@ func loadFromEnv(cfg *Config) error {
 	cfg.Database.DSN = os.Getenv("DATABASE_DSN")
 	if cfg.Database.DSN == "" {
 		return errors.New("DATABASE_DSN env var is required")
+	}
+
+	cfg.JWT.JWTSecret = os.Getenv("JWT_SECRET")
+	if cfg.JWT.JWTSecret == "" {
+		return errors.New("JWT_SECRET env var is required")
 	}
 
 	return nil

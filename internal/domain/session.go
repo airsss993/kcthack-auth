@@ -6,6 +6,6 @@ type Session struct {
 	ID        string
 	UserID    string
 	Token     string
-	ExpiresAt time.Duration
+	ExpiresAt time.Time
 	CreatedAt time.Time
 }

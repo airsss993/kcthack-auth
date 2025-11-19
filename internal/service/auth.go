@@ -13,21 +13,24 @@ import (
 )
 
 type AuthService struct {
-	repo        repository.AuthRepository
-	sessionRepo repository.SessionRepository
-	tm          auth.JWTManager
-	accessTTL   time.Duration
-	refreshTTL  time.Duration
+	repo       repository.AuthRepository
+	srepo      repository.SessionRepository
+	tm         auth.JWTManager
+	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
-func NewAuthService(repo repository.AuthRepository, tm auth.JWTManager) *AuthService {
+func NewAuthService(repo repository.AuthRepository, srepo repository.SessionRepository, tm auth.JWTManager, accessTTL, refreshTTL time.Duration) *AuthService {
 	return &AuthService{
-		repo: repo,
-		tm:   tm,
+		repo:       repo,
+		srepo:      srepo,
+		tm:         tm,
+		accessTTL:  accessTTL,
+		refreshTTL: refreshTTL,
 	}
 }
 
-func (a *AuthService) Register(ctx context.Context, req *RegisterReq) (*AuthResp, error) {
+func (a *AuthService) Register(ctx context.Context, req RegisterReq) (*AuthResp, error) {
 	if req.Email == "" {
 		return nil, fmt.Errorf("email field cannot be empty")
 	}
@@ -46,7 +49,7 @@ func (a *AuthService) Register(ctx context.Context, req *RegisterReq) (*AuthResp
 	}
 
 	if exists {
-		return nil, fmt.Errorf("user with email: %s already exists, err: %w", req.Email, err)
+		return nil, fmt.Errorf("user with email: %s already exists", req.Email)
 	}
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
@@ -82,10 +85,11 @@ func (a *AuthService) Register(ctx context.Context, req *RegisterReq) (*AuthResp
 		ExpiresAt:    time.Now().Add(a.accessTTL),
 	}
 
-	if err := a.sessionRepo.SaveSession(ctx, &domain.Session{
+	if err := a.srepo.SaveSession(ctx, &domain.Session{
+		ID:        uuid.NewString(),
 		UserID:    user.ID,
 		Token:     refreshToken,
-		ExpiresAt: a.accessTTL,
+		ExpiresAt: time.Now().Add(a.refreshTTL),
 	}); err != nil {
 		return nil, fmt.Errorf("failed to save user session: %w", err)
 	}
@@ -124,10 +128,11 @@ func (a *AuthService) Login(ctx context.Context, req *LoginReq) (*AuthResp, erro
 		ExpiresAt:    time.Now().Add(a.accessTTL),
 	}
 
-	if err := a.sessionRepo.SaveSession(ctx, &domain.Session{
+	if err := a.srepo.SaveSession(ctx, &domain.Session{
+		ID:        uuid.NewString(),
 		UserID:    user.ID,
 		Token:     refreshToken,
-		ExpiresAt: a.accessTTL,
+		ExpiresAt: time.Now().Add(a.refreshTTL),
 	}); err != nil {
 		return nil, fmt.Errorf("failed to save user session: %w", err)
 	}
@@ -136,7 +141,7 @@ func (a *AuthService) Login(ctx context.Context, req *LoginReq) (*AuthResp, erro
 }
 
 func (a *AuthService) RefreshToken(ctx context.Context, token string) (*AuthResp, error) {
-	session, err := a.sessionRepo.FindByToken(ctx, token)
+	session, err := a.srepo.FindByToken(ctx, token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find user session: %w", err)
 	}
@@ -159,10 +164,11 @@ func (a *AuthService) RefreshToken(ctx context.Context, token string) (*AuthResp
 		ExpiresAt:    time.Now().Add(a.accessTTL),
 	}
 
-	if err := a.sessionRepo.SaveSession(ctx, &domain.Session{
+	if err := a.srepo.SaveSession(ctx, &domain.Session{
+		ID:        uuid.NewString(),
 		UserID:    user.ID,
 		Token:     refreshToken,
-		ExpiresAt: a.accessTTL,
+		ExpiresAt: time.Now().Add(a.refreshTTL),
 	}); err != nil {
 		return nil, fmt.Errorf("failed to save user session: %w", err)
 	}
@@ -171,5 +177,5 @@ func (a *AuthService) RefreshToken(ctx context.Context, token string) (*AuthResp
 }
 
 func (a *AuthService) Logout(ctx context.Context, token string) error {
-	return a.sessionRepo.DeleteByToken(ctx, token)
+	return a.srepo.DeleteByToken(ctx, token)
 }

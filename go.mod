@@ -1,6 +1,6 @@
 module github.com/kcthack-auth
 
-go 1.25.1
+go 1.25.4
 
 require (
 	github.com/gin-gonic/gin v1.11.0

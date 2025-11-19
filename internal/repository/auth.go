@@ -25,9 +25,9 @@ func (a *AuthPSQL) Create(ctx context.Context, user *domain.User) error {
 
 func (a *AuthPSQL) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, first_name, last_name, role, email, tg_name, birth_date, bio FROM users WHERE email=$1`
+	query := `SELECT id, first_name, last_name, role, email, tg_name, birth_date, bio, pass_hash FROM users WHERE email=$1`
 
-	err := a.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Role, &user.Email, &user.TgName, &user.BirthDate, &user.BIO)
+	err := a.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Role, &user.Email, &user.TgName, &user.BirthDate, &user.BIO, &user.PassHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -41,9 +41,9 @@ func (a *AuthPSQL) FindByEmail(ctx context.Context, email string) (*domain.User,
 
 func (a *AuthPSQL) FindByID(ctx context.Context, userID string) (*domain.User, error) {
 	var user domain.User
-	query := `SELECT id, first_name, last_name, role, email, tg_name, birth_date, bio FROM users WHERE id=$1`
+	query := `SELECT id, first_name, last_name, role, email, tg_name, birth_date, bio, pass_hash FROM users WHERE id=$1`
 
-	err := a.db.QueryRowContext(ctx, query, userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Role, &user.Email, &user.TgName, &user.BirthDate, &user.BIO)
+	err := a.db.QueryRowContext(ctx, query, userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Role, &user.Email, &user.TgName, &user.BirthDate, &user.BIO, &user.PassHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}

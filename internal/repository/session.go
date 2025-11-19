@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 
 	"github.com/kcthack-auth/internal/domain"
@@ -19,10 +20,11 @@ func NewSessionRepo(db *sql.DB) *SessionRepo {
 
 func (t *SessionRepo) SaveSession(ctx context.Context, session *domain.Session) error {
 	tokenHash := sha256.Sum256([]byte(session.Token))
+	tokenHashHex := hex.EncodeToString(tokenHash[:])
 
 	query := `INSERT INTO users_sessions (id, user_id, token_hash,expires_at) VALUES ($1, $2, $3, $4)`
 
-	_, err := t.db.ExecContext(ctx, query, session.ID, session.UserID, tokenHash, session.ExpiresAt)
+	_, err := t.db.ExecContext(ctx, query, session.ID, session.UserID, tokenHashHex, session.ExpiresAt)
 	return err
 }
 
@@ -30,10 +32,11 @@ func (t *SessionRepo) FindByToken(ctx context.Context, token string) (*domain.Se
 	var session domain.Session
 
 	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashHex := hex.EncodeToString(tokenHash[:])
 
 	query := `SELECT id, user_id, token_hash, expires_at, created_at FROM users_sessions WHERE token_hash=$1`
 
-	err := t.db.QueryRowContext(ctx, query, tokenHash).Scan(&session.ID, &session.UserID, &session.Token, &session.ExpiresAt, &session.CreatedAt)
+	err := t.db.QueryRowContext(ctx, query, tokenHashHex).Scan(&session.ID, &session.UserID, &session.Token, &session.ExpiresAt, &session.CreatedAt)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -47,10 +50,11 @@ func (t *SessionRepo) FindByToken(ctx context.Context, token string) (*domain.Se
 
 func (t *SessionRepo) DeleteByToken(ctx context.Context, token string) error {
 	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashHex := hex.EncodeToString(tokenHash[:])
 
 	query := `DELETE FROM users_sessions WHERE token_hash=$1`
 
-	_, err := t.db.ExecContext(ctx, query, tokenHash)
+	_, err := t.db.ExecContext(ctx, query, tokenHashHex)
 	return err
 }
 

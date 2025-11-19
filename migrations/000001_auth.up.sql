@@ -5,7 +5,7 @@ CREATE TABLE users
     last_name   varchar(255)            not null,
     role        varchar(50)             not null,
     email       varchar(100) unique     not null,
-    tg_name     varchar(100) unique     null,
+    tg_name     varchar(100)            null,
     birth_date  date                    null,
     bio         text                    null,
     pass_hash   varchar(255)            not null,

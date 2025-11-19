@@ -2,14 +2,42 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/kcthack-auth/internal/config"
+	v1 "github.com/kcthack-auth/internal/handler/v1"
+	"github.com/kcthack-auth/internal/service"
 )
 
-func NewRouter() *gin.Engine {
-	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
+type Handler struct {
+	services *service.Services
+}
+
+func NewHandler(services *service.Services) *Handler {
+	return &Handler{
+		services: services,
+	}
+}
+
+func (h *Handler) Init(cfg *config.Config) *gin.Engine {
+	r := gin.Default()
+
+	h.initAPI(r)
+
+	return r
+}
+
+func (h *Handler) initAPI(r *gin.Engine) {
+	api := r.Group("/api")
+	{
+		api.GET("/ping", func(c *gin.Context) {
+			c.String(200, "pong")
 		})
-	})
-	return router
+
+		v1Group := api.Group("/v1")
+		{
+			handlerV1 := v1.NewHandler(*h.services)
+			handlerV1.Init(v1Group)
+		}
+
+	}
+
 }
